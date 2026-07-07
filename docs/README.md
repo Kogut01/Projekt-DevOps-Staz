@@ -73,6 +73,8 @@ Na koniec zatrzymaj środowisko:
 docker compose down
 ```
 
+<br>
+
 ---
 
 <div align="center">
