@@ -73,6 +73,8 @@ Na koniec zatrzymaj środowisko:
 docker compose down
 ```
 
+---
+
 <div align="center">
 
 ### 📜 Licencja 📜
