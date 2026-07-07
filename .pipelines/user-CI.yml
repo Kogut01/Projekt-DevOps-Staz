@@ -1,0 +1,41 @@
+trigger: none
+pr: none
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+steps:
+- task: Bash@3
+  displayName: '⚙️ Sprawdzenie kompilacji - User Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet build services/user_service/
+
+- task: Bash@3
+  displayName: '🔍 Ocena jakości kodu'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet format services/user_service/ --verify-no-changes
+
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz User Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/user_service/Dockerfile \
+      -t projektdevops.azurecr.io/user-service:ci-test-$(Build.BuildId) services/user_service/
+
+- task: trivy@2
+  displayName: '🧪 Skanowanie obrazu User Service'
+  inputs:
+    type: 'image'
+    target: 'projektdevops.azurecr.io/user-service:ci-test-$(Build.BuildId)'
+    scanners: 'vuln,misconfig,secret'
+    ignoreUnfixed: true
+    ignoreScanErrors: true
+    reports: 'table'

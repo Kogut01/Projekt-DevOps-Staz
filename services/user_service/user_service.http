@@ -1,0 +1,20 @@
+@HostAddress = https://localhost:5008
+
+GET {{HostAddress}}/users
+Accept: application/json
+
+###
+
+POST {{HostAddress}}/users
+Content-Type: application/json
+
+{
+    "Name": "Kamil",
+    "Surname": "Slimak",
+    "Role": "Developer",
+    "Age": 23,
+    "Phone": "123 345 456",
+    "Email": "kamil.slimak@gmail.com"
+}
+
+###

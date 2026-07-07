@@ -1,0 +1,17 @@
+@HostAddress = http://localhost:5268
+
+GET {{HostAddress}}/audit
+Accept: application/json
+
+###
+
+POST {{HostAddress}}/audit
+Content-Type: application/json
+
+{
+    "Service": "MyService",
+    "Event": "MyEvent",
+    "Message": "MyMessage"
+}
+
+###

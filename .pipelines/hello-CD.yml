@@ -1,0 +1,50 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - services/hello_service/**
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+variables:
+- group: key-vault-secrets
+
+
+steps:
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz Hello Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/hello_service/Dockerfile \
+      -t projektdevops.azurecr.io/hello-service:$(Build.BuildId) services/hello_service/
+
+- task: AzureCLI@2
+  displayName: '☁️ Wysłanie obrazu do ACR'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name projektdevops
+
+      docker push projektdevops.azurecr.io/hello-service:$(Build.BuildId)
+
+- task: AzureCLI@2
+  displayName: '🚀 Wdrażanie Hello Service do Azure Container Apps'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az containerapp update \
+        --name hello-service \
+        --resource-group mikroserwisy \
+        --image projektdevops.azurecr.io/hello-service:$(Build.BuildId) \
+        --set-env-vars APPLICATIONINSIGHTS_CONNECTION_STRING="$(AppInsightsConnectionString)"

@@ -1,0 +1,19 @@
+trigger: none
+pr: none
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+steps:
+- task: trivy@2
+  displayName: '🧪 Skanowanie systemu plików'
+  inputs:
+    version: 'latest'
+    type: 'filesystem'
+    target: '.'
+    scanners: 'vuln,misconfig,secret'
+    ignoreUnfixed: true
+    ignoreScanErrors: true
+    reports: 'table'

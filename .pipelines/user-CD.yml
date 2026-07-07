@@ -1,0 +1,50 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - services/user_service/**
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+variables:
+- group: key-vault-secrets
+
+
+steps:
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz User Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/user_service/Dockerfile \
+      -t projektdevops.azurecr.io/user-service:$(Build.BuildId) services/user_service/
+
+- task: AzureCLI@2
+  displayName: '☁️ Wysłanie obrazu do ACR'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name projektdevops
+
+      docker push projektdevops.azurecr.io/user-service:$(Build.BuildId)
+
+- task: AzureCLI@2
+  displayName: '🚀 Wdrażanie User Service do Azure Container Apps'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az containerapp update \
+        --name user-service \
+        --resource-group mikroserwisy \
+        --image projektdevops.azurecr.io/user-service:$(Build.BuildId) \
+        --set-env-vars APPLICATIONINSIGHTS_CONNECTION_STRING="$(AppInsightsConnectionString)"

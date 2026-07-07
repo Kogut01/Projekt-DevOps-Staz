@@ -1,0 +1,42 @@
+trigger: none
+pr: none
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+steps:
+- task: Bash@3
+  displayName: '⚙️ Sprawdzenie kompilacji - Audit Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet build services/audit_service/
+
+- task: Bash@3
+  displayName: '🔍 Ocena jakości kodu'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet format services/audit_service/ --verify-no-changes
+
+
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz Audit Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/audit_service/Dockerfile \
+      -t projektdevops.azurecr.io/audit-service:ci-test-$(Build.BuildId) services/audit_service/
+
+- task: trivy@2
+  displayName: '🧪 Skanowanie obrazu Audit Service'
+  inputs:
+    type: 'image'
+    target: 'projektdevops.azurecr.io/audit-service:ci-test-$(Build.BuildId)'
+    scanners: 'vuln,misconfig,secret'
+    ignoreUnfixed: true
+    ignoreScanErrors: true
+    reports: 'table'

@@ -1,0 +1,42 @@
+trigger: none
+pr: none
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+steps:
+- task: Bash@3
+  displayName: '⚙️ Sprawdzenie kompilacji - Hello Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet build services/hello_service/
+
+- task: Bash@3
+  displayName: '🔍 Ocena jakości kodu'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet format services/hello_service/ --verify-no-changes
+
+
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz Hello Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/hello_service/Dockerfile \
+      -t projektdevops.azurecr.io/hello-service:ci-test-$(Build.BuildId) services/hello_service/
+
+- task: trivy@2
+  displayName: '🧪 Skanowanie obrazu Hello Service'
+  inputs:
+    type: 'image'
+    target: 'projektdevops.azurecr.io/hello-service:ci-test-$(Build.BuildId)'
+    scanners: 'vuln,misconfig,secret'
+    ignoreUnfixed: true
+    ignoreScanErrors: true
+    reports: 'table'

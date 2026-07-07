@@ -1,0 +1,65 @@
+services:
+  audit-service:
+    depends_on:
+      - hello-service
+      - user-service
+
+    build: services/audit_service/
+    container_name: audit-service
+    restart: unless-stopped
+
+    ports:
+      - "${AUDIT_SERVICE_PORT}:8080"
+
+    networks:
+      - devops-project-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+  hello-service:
+    build: services/hello_service/
+    container_name: hello-service
+    restart: unless-stopped
+
+    ports:
+      - "${HELLO_SERVICE_PORT}:8080"
+
+    networks:
+      - devops-project-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+  user-service:
+    build: services/user_service/
+    container_name: user-service
+    restart: unless-stopped
+
+    ports:
+      - "${USER_SERVICE_PORT}:8080"
+
+    networks:
+      - devops-project-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+networks:
+  devops-project-network:
+    driver: bridge

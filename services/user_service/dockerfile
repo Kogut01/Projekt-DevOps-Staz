@@ -1,0 +1,68 @@
+# Zmienne środowiskowe
+ARG PROJECT_SETTINGS=user_service.csproj
+ARG PROJECT_BINARY=user_service.dll
+
+ARG USERNAME=app
+ARG GROUPNAME=app
+# ---
+
+
+
+# Obrazy początkowe
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS run
+# ---
+
+
+# Etap: Instalacja zależności
+FROM base AS deps
+
+ARG PROJECT_SETTINGS
+
+WORKDIR /deps
+
+COPY ${PROJECT_SETTINGS} .
+
+RUN dotnet restore "${PROJECT_SETTINGS}"
+# --- 
+
+
+
+# Etap: Budowanie
+FROM base AS build
+
+ARG PROJECT_SETTINGS
+
+WORKDIR /app
+
+COPY --from=deps /deps .
+COPY . .
+
+RUN dotnet publish "${PROJECT_SETTINGS}" -c Release -o /app/publish
+# ---
+
+
+
+# Etap: Uruchamianie
+FROM run AS runner
+
+ARG PROJECT_BINARY
+ENV PROJECT_BINARY=${PROJECT_BINARY}
+
+ARG USERNAME
+ARG GROUPNAME
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y curl ca-certificates
+
+COPY --from=build --chown=${USERNAME}:${GROUPNAME} /app/publish .
+
+USER ${USERNAME}
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-c", "dotnet $PROJECT_BINARY"]
+# ---

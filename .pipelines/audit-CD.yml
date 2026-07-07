@@ -1,0 +1,49 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - services/audit_service/**
+
+
+pool:
+  vmImage: ubuntu-latest
+
+
+variables:
+- group: key-vault-secrets
+
+steps:
+- task: Bash@3
+  displayName: '🐳 Zbuduj obraz Audit Service'
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build \
+      -f services/audit_service/Dockerfile \
+      -t projektdevops.azurecr.io/audit-service:$(Build.BuildId) services/audit_service/
+
+- task: AzureCLI@2
+  displayName: '☁️ Wysłanie obrazu do ACR'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name projektdevops
+
+      docker push projektdevops.azurecr.io/audit-service:$(Build.BuildId)
+
+- task: AzureCLI@2
+  displayName: '🚀 Wdrażanie Audit Service do Azure Container Apps'
+  inputs:
+    azureSubscription: 'Azure-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az containerapp update \
+        --name audit-service \
+        --resource-group mikroserwisy \
+        --image projektdevops.azurecr.io/audit-service:$(Build.BuildId) \
+        --set-env-vars APPLICATIONINSIGHTS_CONNECTION_STRING="$(AppInsightsConnectionString)"
